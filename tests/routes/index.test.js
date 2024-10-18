@@ -2,23 +2,38 @@
 import { expect } from 'chai';
 import request from 'supertest';
 import server from '../../server';
+import dbClient from '../../utils/db';
+import redisClient from '../../utils/redis';
 
 describe('Routes', () => {
-  after(() => {
-    server.close();
+  before(async () => {
+    await dbClient.db.collection('users').deleteMany({});
+    await redisClient.client.flushall();
   });
 
-  it('should handle GET /status', async () => {
-    const res = await request(server).get('/status');
-    expect(res.status).to.equal(200);
-    expect(res.body).to.have.property('redis');
-    expect(res.body).to.have.property('db');
+  describe('GET /status', () => {
+    it('should return the status of Redis and DB', (done) => {
+      request(server)
+        .get('/status')
+        .expect(200)
+        .end((err, res) => {
+          expect(res.body).to.have.property('redis');
+          expect(res.body).to.have.property('db');
+          done(err);
+        });
+    });
   });
 
-  it('should handle GET /stats', async () => {
-    const res = await request(server).get('/stats');
-    expect(res.status).to.equal(200);
-    expect(res.body).to.have.property('users');
-    expect(res.body).to.have.property('files');
+  describe('GET /stats', () => {
+    it('should return the number of users and files', (done) => {
+      request(server)
+        .get('/stats')
+        .expect(200)
+        .end((err, res) => {
+          expect(res.body).to.have.property('users');
+          expect(res.body).to.have.property('files');
+          done(err);
+        });
+    });
   });
 });
